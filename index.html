@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Port API Pull Request Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        select, input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        .api-config {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .api-config h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .api-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .debug-section {
+            margin-top: 30px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+        .debug-section h3 {
+            margin-top: 0;
+            color: #28a745;
+            font-size: 16px;
+        }
+        .debug-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .debug-tab {
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .debug-tab.active {
+            background-color: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+        .debug-tab:hover:not(.active) {
+            background-color: #f8f9fa;
+        }
+        #rawData {
+            width: 100%;
+            height: 200px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0 4px 4px 4px;
+            padding: 10px;
+            resize: vertical;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Port API Pull Request Analytics</h1>
+        
+        <div class="api-config">
+            <h3>Port API Configuration</h3>
+            <div class="api-input">
+                <input type="text" id="apiToken" placeholder="Enter your Port API token" style="flex: 1;">
+                <select id="region">
+                    <option value="https://api.port.io">Europe (api.port.io)</option>
+                    <option value="https://api.us.port.io">United States (api.us.port.io)</option>
+                </select>
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" id="useProxy"> Use CORS Proxy
+                </label>
+                <button onclick="loadPullRequests()">Load Data</button>
+                <button onclick="testApiEndpoint()" style="background-color: #28a745;">Test Endpoint</button>
+                <button onclick="listBlueprints()" style="background-color: #ffc107; color: #000;">List Blueprints</button>
+                <button onclick="testLocalConnection()" style="background-color: #17a2b8;">Test Local Connection</button>
+            </div>
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #666;">
+                Get your API token from Port → Settings → Credentials → Generate API token
+            </p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="chartType">Chart Type:</label>
+                <select id="chartType" onchange="updateChart()">
+                    <option value="bar">Bar Chart</option>
+                    <option value="line">Line Chart</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="timeRange">Time Range:</label>
+                <select id="timeRange" onchange="updateChart()">
+                    <option value="7">Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="metric">Metric:</label>
+                <select id="metric" onchange="updateChart()">
+                    <option value="hours">Hours (Y-axis)</option>
+                    <option value="count">Count</option>
+                    <option value="avgHours">Average Hours</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div id="loadingMessage" class="loading" style="display: none;">Loading data...</div>
+        
+        <div class="chart-container">
+            <canvas id="pullRequestChart"></canvas>
+        </div>
+
+        <div class="debug-section">
+            <h3>Debug Information</h3>
+            <div class="debug-tabs">
+                <button class="debug-tab active" onclick="showDebugTab('fetch')">Fetch Result</button>
+                <button class="debug-tab" onclick="showDebugTab('processed')">Processed Data</button>
+            </div>
+            <textarea id="rawData" readonly placeholder="Raw fetch result from Port API will appear here..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+        let pullRequestData = [];
+        let fetchResult = '';
+        let processedData = '';
+
+        // Sample data structure for demonstration
+        const sampleData = [
+            { date: '2024-01-01', hours: 8, count: 3, avgHours: 2.7 },
+            { date: '2024-01-02', hours: 12, count: 4, avgHours: 3.0 },
+            { date: '2024-01-03', hours: 6, count: 2, avgHours: 3.0 },
+            { date: '2024-01-04', hours: 15, count: 5, avgHours: 3.0 },
+            { date: '2024-01-05', hours: 9, count: 3, avgHours: 3.0 },
+            { date: '2024-01-06', hours: 18, count: 6, avgHours: 3.0 },
+            { date: '2024-01-07', hours: 10, count: 4, avgHours: 2.5 }
+        ];
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showLoading() {
+            document.getElementById('loadingMessage').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingMessage').style.display = 'none';
+        }
+
+        function showDebugTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.debug-tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update textarea content
+            const textarea = document.getElementById('rawData');
+            if (tab === 'fetch') {
+                textarea.value = fetchResult;
+                textarea.placeholder = 'Raw fetch result from Port API will appear here...';
+            } else if (tab === 'processed') {
+                textarea.value = processedData;
+                textarea.placeholder = 'Processed data for chart will appear here...';
+            }
+        }
+
+        async function loadPullRequests() {
+            const apiToken = document.getElementById('apiToken').value;
+            const region = document.getElementById('region').value;
+            
+            if (!apiToken) {
+                showError('Please enter your Port API token');
+                return;
+            }
+
+            hideError();
+            showLoading();
+
+            try {
+
+                // Make actual API call to Port
+                const useProxy = document.getElementById('useProxy').checked;
+                let apiUrl;
+                
+                if (useProxy) {
+                    // Use external CORS proxy
+                    apiUrl = `https://cors-anywhere.herokuapp.com/${region}/v1/blueprints/githubPullRequest/entities`;
+                } else {
+                    // Use local proxy server
+                    apiUrl = `/api/v1/blueprints/githubPullRequest/entities`;
+                }
+                
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    // Enhanced error handling for specific HTTP status codes
+                    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    
+                    if (response.status === 403) {
+                        errorMessage += `\n\n=== 403 FORBIDDEN ERROR ANALYSIS ===\n`;
+                        errorMessage += `This usually means:\n`;
+                        errorMessage += `1. Invalid or expired API token\n`;
+                        errorMessage += `2. Token doesn't have required permissions\n`;
+                        errorMessage += `3. Blueprint 'githubPullRequest' doesn't exist\n`;
+                        errorMessage += `4. CORS proxy is interfering with authentication\n\n`;
+                        errorMessage += `Token length: ${apiToken.length} characters\n`;
+                        errorMessage += `Token starts with: ${apiToken.substring(0, 20)}...\n`;
+                        errorMessage += `API URL: ${apiUrl}\n\n`;
+                        errorMessage += `=== TROUBLESHOOTING STEPS ===\n`;
+                        errorMessage += `1. Generate a new API token (3-hour expiry)\n`;
+                        errorMessage += `2. Verify blueprint exists in Port\n`;
+                        errorMessage += `3. Check token permissions\n`;
+                        errorMessage += `4. Try without CORS proxy (if possible)\n`;
+                        errorMessage += `5. Test API directly in browser/Postman\n`;
+                    } else if (response.status === 401) {
+                        errorMessage += `\n\n=== 401 UNAUTHORIZED ERROR ===\n`;
+                        errorMessage += `Invalid API token or authentication failed.\n`;
+                        errorMessage += `Generate a new token from Port → Settings → Credentials`;
+                    } else if (response.status === 404) {
+                        errorMessage += `\n\n=== 404 NOT FOUND ERROR ===\n`;
+                        errorMessage += `The blueprint 'githubPullRequest' was not found.\n`;
+                        errorMessage += `Check if the blueprint exists in your Port instance.`;
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+                const rawData = await response.json();
+                
+                // Store fetch result for debugging
+                fetchResult = `=== FETCH RESULT ===\n` +
+                    `URL: ${apiUrl}\n` +
+                    `Method: GET\n` +
+                    `Headers Sent:\n` +
+                    `  Authorization: Bearer ${apiToken.substring(0, 20)}...\n` +
+                    `  Content-Type: application/json\n\n` +
+                    `Response Status: ${response.status} ${response.statusText}\n` +
+                    `Response Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}\n\n` +
+                    `Response Body:\n${JSON.stringify(rawData, null, 2)}`;
+                
+                // Display fetch result in debug textarea
+                document.getElementById('rawData').value = fetchResult;
+                
+                // Process the data for the chart
+                console.log('Raw API response:', rawData); // Debug log
+                
+                if (rawData.entities && rawData.entities.length > 0) {
+                    console.log(`Found ${rawData.entities.length} entities`); // Debug log
+                    
+                    // Transform Port API data to chart format
+                    pullRequestData = rawData.entities.map((entity, index) => {
+                        console.log(`Processing entity ${index}:`, entity); // Debug log
+                        
+                        try {
+                            const createdAt = new Date(entity.createdAt);
+                            const updatedAt = new Date(entity.updatedAt);
+                            const hoursDiff = Math.abs(updatedAt - createdAt) / (1000 * 60 * 60); // Convert to hours
+                            
+                            const processedEntity = {
+                                date: createdAt.toISOString().split('T')[0],
+                                hours: Math.round(hoursDiff),
+                                count: 1,
+                                avgHours: Math.round(hoursDiff),
+                                title: entity.title || 'Untitled PR',
+                                status: entity.properties?.status || 'unknown',
+                                rawEntity: entity // Keep original for debugging
+                            };
+                            
+                            console.log(`Processed entity ${index}:`, processedEntity); // Debug log
+                            return processedEntity;
+                        } catch (error) {
+                            console.error(`Error processing entity ${index}:`, error, entity);
+                            return {
+                                date: '1970-01-01',
+                                hours: 0,
+                                count: 1,
+                                avgHours: 0,
+                                title: 'Error Processing',
+                                status: 'error',
+                                rawEntity: entity
+                            };
+                        }
+                    });
+                    
+                    // Group by date and aggregate
+                    const groupedData = {};
+                    pullRequestData.forEach(item => {
+                        if (!groupedData[item.date]) {
+                            groupedData[item.date] = {
+                                date: item.date,
+                                hours: 0,
+                                count: 0,
+                                avgHours: 0
+                            };
+                        }
+                        groupedData[item.date].hours += item.hours;
+                        groupedData[item.date].count += item.count;
+                    });
+                    
+                    // Calculate averages
+                    Object.values(groupedData).forEach(item => {
+                        item.avgHours = item.count > 0 ? item.hours / item.count : 0;
+                    });
+                    
+                    pullRequestData = Object.values(groupedData).sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    // Store processed data for debugging
+                    processedData = `=== PROCESSED DATA ===\n` +
+                        `Total entities processed: ${rawData.entities.length}\n` +
+                        `Grouped by date: ${pullRequestData.length} days\n\n` +
+                        `Raw Entities Sample (first 2):\n${JSON.stringify(rawData.entities.slice(0, 2), null, 2)}\n\n` +
+                        `Processed Chart Data:\n${JSON.stringify(pullRequestData, null, 2)}`;
+                } else {
+                    // No data found, use sample data
+                    pullRequestData = [...sampleData];
+                    fetchResult = 'No Pull Request entities found in the response.\n\n' + JSON.stringify(rawData, null, 2);
+                    processedData = 'Using sample data for demonstration.\n\n' + JSON.stringify(sampleData, null, 2);
+                    document.getElementById('rawData').value = fetchResult;
+                }
+                
+                hideLoading();
+                
+                // Debug: Check if we have valid data before updating chart
+                console.log('Final pullRequestData:', pullRequestData);
+                
+                if (pullRequestData && pullRequestData.length > 0) {
+                    console.log('Updating chart with', pullRequestData.length, 'data points');
+                    updateChart();
+                } else {
+                    console.error('No valid data to display in chart');
+                    showError('No valid data to display in chart. Check the debug information.');
+                }
+                
+            } catch (error) {
+                hideLoading();
+                showError(`Error loading data: ${error.message}`);
+                
+                // Enhanced error debugging
+                let errorDetails = `=== FETCH ERROR ===\n`;
+                errorDetails += `Error Type: ${error.name}\n`;
+                errorDetails += `Error Message: ${error.message}\n`;
+                errorDetails += `Error Stack: ${error.stack}\n\n`;
+                
+                // Enhanced debugging for localhost
+                errorDetails += `=== CONNECTION DEBUG INFO ===\n`;
+                errorDetails += `Current URL: ${window.location.href}\n`;
+                errorDetails += `Protocol: ${window.location.protocol}\n`;
+                errorDetails += `Host: ${window.location.host}\n`;
+                errorDetails += `Port: ${window.location.port}\n`;
+                errorDetails += `User Agent: ${navigator.userAgent}\n\n`;
+                
+                if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+                    errorDetails += `=== NETWORK ERROR ANALYSIS ===\n`;
+                    errorDetails += `This could be:\n`;
+                    errorDetails += `1. CORS issue (even on localhost)\n`;
+                    errorDetails += `2. Invalid API token\n`;
+                    errorDetails += `3. Wrong API endpoint\n`;
+                    errorDetails += `4. Port API server issues\n`;
+                    errorDetails += `5. Network connectivity problems\n\n`;
+                    
+                    errorDetails += `API URL being called: ${apiUrl}\n`;
+                    errorDetails += `Region selected: ${region}\n`;
+                    errorDetails += `Token length: ${apiToken.length} characters\n`;
+                    errorDetails += `Token starts with: ${apiToken.substring(0, 10)}...\n\n`;
+                    
+                    errorDetails += `=== TROUBLESHOOTING STEPS ===\n`;
+                    errorDetails += `1. Verify API token is valid (3-hour expiry)\n`;
+                    errorDetails += `2. Check if blueprint 'githubPullRequest' exists\n`;
+                    errorDetails += `3. Try the CORS proxy option\n`;
+                    errorDetails += `4. Check browser console for more details\n`;
+                    errorDetails += `5. Test API endpoint in browser directly\n\n`;
+                }
+                
+                errorDetails += `Using sample data for demonstration.`;
+                
+                fetchResult = errorDetails;
+                processedData = 'Using sample data due to fetch error.\n\n' + JSON.stringify(sampleData, null, 2);
+                document.getElementById('rawData').value = fetchResult;
+                pullRequestData = [...sampleData];
+                updateChart();
+            }
+        }
+
+        function updateChart() {
+            if (pullRequestData.length === 0) {
+                showError('No data available. Please load data first.');
+                return;
+            }
+
+            const chartType = document.getElementById('chartType').value;
+            const metric = document.getElementById('metric').value;
+            const timeRange = parseInt(document.getElementById('timeRange').value);
+
+            // Filter data based on time range
+            const filteredData = pullRequestData.slice(-timeRange);
+
+            const ctx = document.getElementById('pullRequestChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            const labels = filteredData.map(item => item.date);
+            const data = filteredData.map(item => item[metric]);
+
+            chart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `Pull Request ${metric.charAt(0).toUpperCase() + metric.slice(1)}`,
+                        data: data,
+                        backgroundColor: chartType === 'bar' ? 'rgba(54, 162, 235, 0.6)' : 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        fill: chartType === 'line'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: metric === 'hours' ? 'Hours' : metric === 'count' ? 'Count' : 'Average Hours'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Pull Request Analytics - ${metric.charAt(0).toUpperCase() + metric.slice(1)} over Time`
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Test API endpoint function
+        async function testApiEndpoint() {
+            const apiToken = document.getElementById('apiToken').value;
+            const region = document.getElementById('region').value;
+            const useProxy = document.getElementById('useProxy').checked;
+            
+            if (!apiToken) {
+                showError('Please enter your Port API token');
+                return;
+            }
+
+            hideError();
+            showLoading();
+
+            try {
+                let apiUrl;
+                
+                if (useProxy) {
+                    apiUrl = `https://cors-anywhere.herokuapp.com/${region}/v1/blueprints/githubPullRequest/entities`;
+                } else {
+                    apiUrl = `/api/v1/blueprints/githubPullRequest/entities`;
+                }
+
+                // Test with a simple HEAD request first
+                const testResult = `=== API ENDPOINT TEST ===\n` +
+                    `Testing URL: ${apiUrl}\n` +
+                    `Method: HEAD (to test connectivity)\n` +
+                    `Token: ${apiToken.substring(0, 20)}...\n` +
+                    `Region: ${region}\n` +
+                    `Proxy: ${useProxy ? 'Yes' : 'No'}\n\n`;
+
+                document.getElementById('rawData').value = testResult + 'Testing connectivity...';
+
+                const response = await fetch(apiUrl, {
+                    method: 'HEAD',
+                    headers: {
+                        'Authorization': `Bearer ${apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = testResult + 
+                    `Response Status: ${response.status} ${response.statusText}\n` +
+                    `Response Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}\n\n` +
+                    `✅ Endpoint is reachable!\n` +
+                    `Now try "Load Data" to fetch actual data.`;
+
+                document.getElementById('rawData').value = result;
+                hideLoading();
+
+            } catch (error) {
+                hideLoading();
+                const errorResult = `=== API ENDPOINT TEST FAILED ===\n` +
+                    `URL: ${apiUrl}\n` +
+                    `Error: ${error.message}\n\n` +
+                    `❌ Endpoint test failed.\n` +
+                    `This confirms the network/CORS issue.\n\n` +
+                    `Try:\n` +
+                    `1. Check your API token\n` +
+                    `2. Verify the blueprint exists\n` +
+                    `3. Enable CORS proxy\n` +
+                    `4. Check browser console for more details`;
+
+                document.getElementById('rawData').value = errorResult;
+                showError(`Endpoint test failed: ${error.message}`);
+            }
+        }
+
+        // List blueprints function
+        async function listBlueprints() {
+            const apiToken = document.getElementById('apiToken').value;
+            const region = document.getElementById('region').value;
+            const useProxy = document.getElementById('useProxy').checked;
+            
+            if (!apiToken) {
+                showError('Please enter your Port API token');
+                return;
+            }
+
+            hideError();
+            showLoading();
+
+            try {
+                let apiUrl = `${region}/v1/blueprints`;
+                
+                if (useProxy) {
+                    apiUrl = `https://cors-anywhere.herokuapp.com/${apiUrl}`;
+                }else {
+                    apiUrl = `/api/v1/blueprints`;
+                }
+
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const blueprints = await response.json();
+                
+                const result = `=== AVAILABLE BLUEPRINTS ===\n` +
+                    `URL: ${apiUrl}\n` +
+                    `Response Status: ${response.status} ${response.statusText}\n\n` +
+                    `Found ${blueprints.blueprints?.length || 0} blueprints:\n\n` +
+                    `${JSON.stringify(blueprints, null, 2)}\n\n` +
+                    `=== BLUEPRINT NAMES ===\n` +
+                    `${blueprints.blueprints?.map(bp => `- ${bp.identifier}`).join('\n') || 'No blueprints found'}\n\n` +
+                    `Use one of these blueprint identifiers in your API calls.`;
+
+                document.getElementById('rawData').value = result;
+                hideLoading();
+
+            } catch (error) {
+                hideLoading();
+                const errorResult = `=== BLUEPRINT LIST ERROR ===\n` +
+                    `URL: ${apiUrl}\n` +
+                    `Error: ${error.message}\n\n` +
+                    `This might help identify the correct blueprint name.`;
+
+                document.getElementById('rawData').value = errorResult;
+                showError(`Blueprint list failed: ${error.message}`);
+            }
+        }
+
+        // Test local connection function
+        async function testLocalConnection() {
+            hideError();
+            showLoading();
+
+            try {
+                const result = `=== LOCAL CONNECTION TEST ===\n` +
+                    `Current URL: ${window.location.href}\n` +
+                    `Protocol: ${window.location.protocol}\n` +
+                    `Host: ${window.location.host}\n` +
+                    `Port: ${window.location.port}\n` +
+                    `User Agent: ${navigator.userAgent}\n\n` +
+                    `Testing basic connectivity...\n`;
+
+                document.getElementById('rawData').value = result + 'Testing...';
+
+                // Test if we can make a basic fetch request
+                const testResponse = await fetch(window.location.href, {
+                    method: 'HEAD'
+                });
+
+                const successResult = result + 
+                    `✅ Local server is responding\n` +
+                    `Response Status: ${testResponse.status}\n` +
+                    `Response Headers: ${JSON.stringify(Object.fromEntries(testResponse.headers.entries()), null, 2)}\n\n` +
+                    `The Node.js server is working correctly.\n` +
+                    `CORS issues should be resolved.\n\n` +
+                    `Now try "Test Endpoint" without CORS proxy.`;
+
+                document.getElementById('rawData').value = successResult;
+                hideLoading();
+
+            } catch (error) {
+                hideLoading();
+                const errorResult = `=== LOCAL CONNECTION TEST FAILED ===\n` +
+                    `Error: ${error.message}\n\n` +
+                    `❌ Cannot connect to local server.\n\n` +
+                    `Troubleshooting:\n` +
+                    `1. Make sure Node.js server is running: node server.js\n` +
+                    `2. Check if port 8000 is available\n` +
+                    `3. Verify you're accessing http://localhost:8000\n` +
+                    `4. Check terminal for server errors\n\n` +
+                    `Server should show: "Server running at http://localhost:8000/"`;
+
+                document.getElementById('rawData').value = errorResult;
+                showError(`Local connection failed: ${error.message}`);
+            }
+        }
+
+        // Initialize with sample data
+        window.onload = function() {
+            pullRequestData = [...sampleData];
+            updateChart();
+        };
+    </script>
+</body>
+</html>
+

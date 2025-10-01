@@ -1,0 +1,14 @@
+{
+  "name": "port-api-chart",
+  "version": "1.0.0",
+  "description": "Port API Pull Request Chart with CORS support",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {},
+  "keywords": ["port", "api", "chart", "cors"],
+  "author": "",
+  "license": "MIT"
+}
