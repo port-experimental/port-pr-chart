@@ -193,6 +193,28 @@
                     <option value="avgHours">Average Hours</option>
                 </select>
             </div>
+            
+            <div class="control-group">
+                <label for="jsonProperty">JSON Property:</label>
+                <select id="jsonProperty" onchange="updatePropertyValues()">
+                    <option value="default">Default Metrics</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="propertyValue">Property Value:</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="propertyValue" onchange="updateSelectionDisplay(); updateChart();">
+                        <option value="all">All Values</option>
+                    </select>
+                    <button onclick="clearFilter()" style="background-color: #6c757d; font-size: 12px; padding: 6px 12px;">Clear Filter</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="selectionDisplay">Current Selection:</label>
+                <input type="text" id="selectionDisplay" readonly placeholder="No selection" style="background-color: #f8f9fa;">
+            </div>
         </div>
 
         <div id="errorMessage" class="error" style="display: none;"></div>
@@ -217,6 +239,9 @@
         let pullRequestData = [];
         let fetchResult = '';
         let processedData = '';
+        let availableProperties = [];
+        let rawEntities = [];
+        let propertyValues = [];
 
         // Sample data structure for demonstration
         const sampleData = [
@@ -261,6 +286,139 @@
                 textarea.value = processedData;
                 textarea.placeholder = 'Processed data for chart will appear here...';
             }
+        }
+
+        function extractPropertiesFromEntities(entities) {
+            const properties = new Set();
+            
+            entities.forEach(entity => {
+                // Add top-level properties
+                Object.keys(entity).forEach(key => {
+                    properties.add(key);
+                });
+                
+                // Add nested properties from properties object
+                if (entity.properties) {
+                    Object.keys(entity.properties).forEach(key => {
+                        properties.add(`properties.${key}`);
+                    });
+                }
+                
+                // Add nested properties from relations
+                if (entity.relations) {
+                    Object.keys(entity.relations).forEach(key => {
+                        properties.add(`relations.${key}`);
+                    });
+                }
+            });
+            
+            return Array.from(properties).sort();
+        }
+
+        function populateJsonPropertyDropdown(properties) {
+            const dropdown = document.getElementById('jsonProperty');
+            
+            // Clear existing options except the default
+            dropdown.innerHTML = '<option value="default">Default Metrics</option>';
+            
+            // Add properties as options
+            properties.forEach(prop => {
+                const option = document.createElement('option');
+                option.value = prop;
+                option.textContent = prop;
+                dropdown.appendChild(option);
+            });
+        }
+
+        function getPropertyValue(entity, propertyPath) {
+            if (propertyPath === 'default') {
+                return null; // Use default metrics
+            }
+            
+            const parts = propertyPath.split('.');
+            let value = entity;
+            
+            for (const part of parts) {
+                if (value && typeof value === 'object' && part in value) {
+                    value = value[part];
+                } else {
+                    return null; // Property doesn't exist
+                }
+            }
+            
+            return value;
+        }
+
+        function extractUniqueValues(entities, propertyPath) {
+            const values = new Set();
+            
+            entities.forEach(entity => {
+                const value = getPropertyValue(entity, propertyPath);
+                if (value !== null && value !== undefined) {
+                    // Convert to string for consistent handling
+                    const stringValue = String(value);
+                    if (stringValue.trim() !== '') {
+                        values.add(stringValue);
+                    }
+                }
+            });
+            
+            return Array.from(values).sort();
+        }
+
+        function updatePropertyValues() {
+            const selectedProperty = document.getElementById('jsonProperty').value;
+            const valueDropdown = document.getElementById('propertyValue');
+            
+            // Clear existing options
+            valueDropdown.innerHTML = '<option value="all">All Values</option>';
+            
+            if (selectedProperty === 'default' || rawEntities.length === 0) {
+                // Reset to default state
+                propertyValues = [];
+                updateSelectionDisplay();
+                updateChart();
+                return;
+            }
+            
+            // Extract unique values for the selected property
+            propertyValues = extractUniqueValues(rawEntities, selectedProperty);
+            
+            // Populate the value dropdown
+            propertyValues.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                valueDropdown.appendChild(option);
+            });
+            
+            // Update display and chart
+            updateSelectionDisplay();
+            updateChart();
+        }
+
+        function updateSelectionDisplay() {
+            const selectedProperty = document.getElementById('jsonProperty').value;
+            const selectedValue = document.getElementById('propertyValue').value;
+            const displayBox = document.getElementById('selectionDisplay');
+            
+            if (selectedProperty === 'default') {
+                displayBox.value = 'Default Metrics';
+            } else if (selectedValue === 'all') {
+                displayBox.value = `${selectedProperty} = All Values`;
+            } else {
+                displayBox.value = `${selectedProperty} = ${selectedValue}`;
+            }
+        }
+
+        function clearFilter() {
+            // Only reset the property value dropdown to show all entities
+            const propertyValueDropdown = document.getElementById('propertyValue');
+            propertyValueDropdown.value = 'all';
+            
+            // Update display and chart
+            updateSelectionDisplay();
+            updateChart();
         }
 
         async function loadPullRequests() {
@@ -351,6 +509,16 @@
                 if (rawData.entities && rawData.entities.length > 0) {
                     console.log(`Found ${rawData.entities.length} entities`); // Debug log
                     
+                    // Store raw entities for property extraction
+                    rawEntities = rawData.entities;
+                    
+                    // Extract all available properties and populate dropdown
+                    availableProperties = extractPropertiesFromEntities(rawData.entities);
+                    populateJsonPropertyDropdown(availableProperties);
+                    
+                    // Initialize property values dropdown
+                    updatePropertyValues();
+                    
                     // Transform Port API data to chart format
                     pullRequestData = rawData.entities.map((entity, index) => {
                         console.log(`Processing entity ${index}:`, entity); // Debug log
@@ -417,6 +585,10 @@
                 } else {
                     // No data found, use sample data
                     pullRequestData = [...sampleData];
+                    rawEntities = []; // Clear raw entities for sample data
+                    availableProperties = ['hours', 'count', 'avgHours']; // Sample properties
+                    populateJsonPropertyDropdown(availableProperties);
+                    updatePropertyValues(); // Initialize property values dropdown
                     fetchResult = 'No Pull Request entities found in the response.\n\n' + JSON.stringify(rawData, null, 2);
                     processedData = 'Using sample data for demonstration.\n\n' + JSON.stringify(sampleData, null, 2);
                     document.getElementById('rawData').value = fetchResult;
@@ -481,6 +653,10 @@
                 processedData = 'Using sample data due to fetch error.\n\n' + JSON.stringify(sampleData, null, 2);
                 document.getElementById('rawData').value = fetchResult;
                 pullRequestData = [...sampleData];
+                rawEntities = []; // Clear raw entities for sample data
+                availableProperties = ['hours', 'count', 'avgHours']; // Sample properties
+                populateJsonPropertyDropdown(availableProperties);
+                updatePropertyValues(); // Initialize property values dropdown
                 updateChart();
             }
         }
@@ -493,10 +669,9 @@
 
             const chartType = document.getElementById('chartType').value;
             const metric = document.getElementById('metric').value;
+            const jsonProperty = document.getElementById('jsonProperty').value;
+            const propertyValue = document.getElementById('propertyValue').value;
             const timeRange = parseInt(document.getElementById('timeRange').value);
-
-            // Filter data based on time range
-            const filteredData = pullRequestData.slice(-timeRange);
 
             const ctx = document.getElementById('pullRequestChart').getContext('2d');
             
@@ -504,15 +679,107 @@
                 chart.destroy();
             }
 
-            const labels = filteredData.map(item => item.date);
-            const data = filteredData.map(item => item[metric]);
+            let labels, data, label, yAxisTitle;
+
+            if (jsonProperty === 'default') {
+                // Use default metrics
+                const filteredData = pullRequestData.slice(-timeRange);
+                labels = filteredData.map(item => item.date);
+                data = filteredData.map(item => item[metric]);
+                label = `Pull Request ${metric.charAt(0).toUpperCase() + metric.slice(1)}`;
+                yAxisTitle = metric === 'hours' ? 'Hours' : metric === 'count' ? 'Count' : 'Average Hours';
+            } else if (propertyValue !== 'all') {
+                // Apply filter to entities but keep original chart structure
+                let filteredEntities = rawEntities.slice(-timeRange);
+                
+                console.log(`Filtering by ${jsonProperty} = ${propertyValue}`);
+                console.log(`Before filtering: ${filteredEntities.length} entities`);
+                
+                filteredEntities = filteredEntities.filter(entity => {
+                    const value = getPropertyValue(entity, jsonProperty);
+                    const matches = value !== null && String(value) === propertyValue;
+                    if (!matches) {
+                        console.log(`Entity filtered out: ${jsonProperty} = ${value} (expected: ${propertyValue})`);
+                    }
+                    return matches;
+                });
+                
+                console.log(`After filtering: ${filteredEntities.length} entities`);
+                
+                // Process filtered entities to maintain original chart structure
+                if (filteredEntities.length === 0) {
+                    // No entities match filter, show empty chart
+                    labels = [];
+                    data = [];
+                    label = `Pull Request ${metric.charAt(0).toUpperCase() + metric.slice(1)} (Filtered)`;
+                    yAxisTitle = metric === 'hours' ? 'Hours' : metric === 'count' ? 'Count' : 'Average Hours';
+                } else {
+                    // Transform filtered entities to chart format (same as original logic)
+                    const filteredChartData = filteredEntities.map((entity, index) => {
+                        try {
+                            const createdAt = new Date(entity.createdAt);
+                            const updatedAt = new Date(entity.updatedAt);
+                            const hoursDiff = Math.abs(updatedAt - createdAt) / (1000 * 60 * 60); // Convert to hours
+                            
+                            return {
+                                date: createdAt.toISOString().split('T')[0],
+                                hours: Math.round(hoursDiff),
+                                count: 1,
+                                avgHours: Math.round(hoursDiff)
+                            };
+                        } catch (error) {
+                            console.error(`Error processing entity ${index}:`, error, entity);
+                            return {
+                                date: '1970-01-01',
+                                hours: 0,
+                                count: 1,
+                                avgHours: 0
+                            };
+                        }
+                    });
+                    
+                    // Group by date and aggregate (same as original logic)
+                    const groupedData = {};
+                    filteredChartData.forEach(item => {
+                        if (!groupedData[item.date]) {
+                            groupedData[item.date] = {
+                                date: item.date,
+                                hours: 0,
+                                count: 0,
+                                avgHours: 0
+                            };
+                        }
+                        groupedData[item.date].hours += item.hours;
+                        groupedData[item.date].count += item.count;
+                    });
+                    
+                    // Calculate averages
+                    Object.values(groupedData).forEach(item => {
+                        item.avgHours = item.count > 0 ? item.hours / item.count : 0;
+                    });
+                    
+                    const finalData = Object.values(groupedData).sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    labels = finalData.map(item => item.date);
+                    data = finalData.map(item => item[metric]);
+                    label = `Pull Request ${metric.charAt(0).toUpperCase() + metric.slice(1)} (Filtered)`;
+                    yAxisTitle = metric === 'hours' ? 'Hours' : metric === 'count' ? 'Count' : 'Average Hours';
+                }
+            } else {
+                // JSON property selected but "All Values" - use default metrics (no filtering)
+                const filteredData = pullRequestData.slice(-timeRange);
+                labels = filteredData.map(item => item.date);
+                data = filteredData.map(item => item[metric]);
+                label = `Pull Request ${metric.charAt(0).toUpperCase() + metric.slice(1)}`;
+                yAxisTitle = metric === 'hours' ? 'Hours' : metric === 'count' ? 'Count' : 'Average Hours';
+            }
 
             chart = new Chart(ctx, {
                 type: chartType,
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: `Pull Request ${metric.charAt(0).toUpperCase() + metric.slice(1)}`,
+                        label: label,
                         data: data,
                         backgroundColor: chartType === 'bar' ? 'rgba(54, 162, 235, 0.6)' : 'rgba(54, 162, 235, 0.2)',
                         borderColor: 'rgba(54, 162, 235, 1)',
@@ -528,7 +795,7 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: metric === 'hours' ? 'Hours' : metric === 'count' ? 'Count' : 'Average Hours'
+                                text: yAxisTitle
                             }
                         },
                         x: {
@@ -541,7 +808,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: `Pull Request Analytics - ${metric.charAt(0).toUpperCase() + metric.slice(1)} over Time`
+                            text: `Port Analytics - ${label} over Time`
                         },
                         legend: {
                             display: true,
@@ -732,6 +999,10 @@
         // Initialize with sample data
         window.onload = function() {
             pullRequestData = [...sampleData];
+            rawEntities = []; // Clear raw entities for sample data
+            availableProperties = ['hours', 'count', 'avgHours']; // Sample properties
+            populateJsonPropertyDropdown(availableProperties);
+            updatePropertyValues(); // Initialize property values dropdown
             updateChart();
         };
     </script>

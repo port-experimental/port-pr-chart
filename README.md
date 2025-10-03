@@ -10,6 +10,7 @@ This application provides:
 - **Port API Integration**: Connects to Port.io API to fetch GitHub Pull Request entities
 - **CORS Proxy Server**: Includes a Node.js server that acts as a CORS proxy to handle cross-origin requests
 - **Multiple Metrics**: Displays hours, count, and average hours for pull requests
+- **JSON Property Explorer**: Dropdown to visualize any property from the Port API response
 - **Time Range Filtering**: Filter data by last 7, 30, or 90 days
 - **Debug Tools**: Built-in debugging features to troubleshoot API connections and data processing
 - **Multi-Region Support**: Supports both Europe (`api.port.io`) and US (`api.us.port.io`) Port regions
@@ -63,6 +64,14 @@ This application provides:
   - **Hours**: Total hours spent on pull requests
   - **Count**: Number of pull requests
   - **Average Hours**: Average hours per pull request
+- **JSON Property**: Explore any property from the Port API response:
+  - **Default Metrics**: Use the standard calculated metrics
+  - **Custom Properties**: Select any field from the API response (e.g., `properties.status`, `relations.assignee`, `createdAt`, etc.)
+- **Property Value**: Filter by specific values of the selected property:
+  - **All Values**: Show all entities (default)
+  - **Specific Values**: Filter to show only entities with the selected value
+  - **Clear Filter Button**: Reset property value filter back to "All Values"
+- **Current Selection**: Displays the active filter in format "property = value"
 
 #### 4. Debug Tools
 - **Test Endpoint**: Verify API connectivity
@@ -131,10 +140,41 @@ const PORT = 8000; // Change this to your desired port
 
 The application processes Port API data by:
 1. Fetching entities from the `githubPullRequest` blueprint
-2. Calculating time differences between `createdAt` and `updatedAt`
-3. Grouping data by date
-4. Aggregating metrics (hours, count, averages)
-5. Sorting chronologically for chart display
+2. Extracting all available properties from the API response
+3. Populating the JSON Property dropdown with discovered fields
+4. Calculating time differences between `createdAt` and `updatedAt` (for default metrics)
+5. Grouping data by date (for default metrics)
+6. Aggregating metrics (hours, count, averages) (for default metrics)
+7. Sorting chronologically for chart display
+
+### JSON Property Explorer & Filtering
+
+The JSON Property system allows you to explore and filter any field from the Port API response:
+
+#### Property Selection
+- **Automatic Discovery**: The application automatically scans all entities and extracts available properties
+- **Nested Properties**: Supports nested properties like `properties.status` or `relations.assignee`
+- **Data Type Handling**: Automatically converts different data types:
+  - Numbers: Displayed as-is
+  - Strings: Converted to numbers if possible, otherwise 0
+  - Booleans: Converted to 1 (true) or 0 (false)
+  - Objects/Arrays: Default to 0
+
+#### Value Filtering
+- **Dynamic Value Discovery**: When you select a property, the second dropdown automatically populates with all unique values found in that property
+- **Smart Filtering**: Choose "All Values" to see everything, or select a specific value to filter the chart
+- **Clear Filter Button**: Reset the property value filter back to "All Values" (keeps the selected JSON property)
+- **Real-time Updates**: Both dropdowns update the chart immediately when changed
+- **Selection Display**: The text box shows your current filter in the format "property = value"
+- **Clean Chart Labels**: Chart axis labels remain unchanged - only the data is filtered
+
+#### Example Usage
+1. Select `properties.status` from the JSON Property dropdown
+2. The Property Value dropdown will show options like: "All Values", "open", "closed", "merged"
+3. Select "open" to see only open pull requests
+4. The Current Selection box will show: "properties.status = open"
+5. The chart updates to show only data for open pull requests (axis labels stay the same)
+6. Click "Clear Filter" to reset the property value back to "All Values" (keeps properties.status selected)
 
 ### Sample Data
 
