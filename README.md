@@ -64,14 +64,13 @@ This application provides:
   - **Hours**: Total hours spent on pull requests
   - **Count**: Number of pull requests
   - **Average Hours**: Average hours per pull request
-- **JSON Property**: Explore any property from the Port API response:
-  - **Default Metrics**: Use the standard calculated metrics
-  - **Custom Properties**: Select any field from the API response (e.g., `properties.status`, `relations.assignee`, `createdAt`, etc.)
-- **Property Value**: Filter by specific values of the selected property:
-  - **All Values**: Show all entities (default)
-  - **Specific Values**: Filter to show only entities with the selected value
+- **Demo Data Explorer** (⚠️ Demo purposes only):
+  - **JSON Property**: Explore any property from the Port API response
+  - **Property Value**: Select specific values of the selected property
+- **Filter Controls**:
+  - **Current Selection**: Editable text box that displays and accepts filter input in format "property = value"
+  - **Apply Filter Button**: Apply the selected or manually entered filter to update the chart
   - **Clear Filter Button**: Reset property value filter back to "All Values"
-- **Current Selection**: Displays the active filter in format "property = value"
 
 #### 4. Debug Tools
 - **Test Endpoint**: Verify API connectivity
@@ -160,21 +159,29 @@ The JSON Property system allows you to explore and filter any field from the Por
   - Booleans: Converted to 1 (true) or 0 (false)
   - Objects/Arrays: Default to 0
 
-#### Value Filtering
+#### Value Filtering (Demo Feature)
+⚠️ **Note**: The JSON Property and Property Value controls are for demo purposes only to help understand your data structure. They should not be used in production.
+
 - **Dynamic Value Discovery**: When you select a property, the second dropdown automatically populates with all unique values found in that property
-- **Smart Filtering**: Choose "All Values" to see everything, or select a specific value to filter the chart
+- **Manual Filter Application**: Select a property value and click "Apply Filter" to update the chart
+- **Editable Filter Input**: Type filters directly in the "Current Selection" text box using format "property = value"
 - **Clear Filter Button**: Reset the property value filter back to "All Values" (keeps the selected JSON property)
-- **Real-time Updates**: Both dropdowns update the chart immediately when changed
-- **Selection Display**: The text box shows your current filter in the format "property = value"
+- **Selection Display**: The text box shows your current selection and accepts manual input
 - **Clean Chart Labels**: Chart axis labels remain unchanged - only the data is filtered
 
 #### Example Usage
-1. Select `properties.status` from the JSON Property dropdown
-2. The Property Value dropdown will show options like: "All Values", "open", "closed", "merged"
-3. Select "open" to see only open pull requests
-4. The Current Selection box will show: "properties.status = open"
-5. The chart updates to show only data for open pull requests (axis labels stay the same)
-6. Click "Clear Filter" to reset the property value back to "All Values" (keeps properties.status selected)
+1. **Using Dropdowns**:
+   - Select `properties.status` from the JSON Property dropdown
+   - The Property Value dropdown will show options like: "All Values", "open", "closed", "merged"
+   - Select "open" from the Property Value dropdown
+   - The Current Selection box will show: "properties.status = open"
+   - Click "Apply Filter" to update the chart with only open pull requests
+
+2. **Using Manual Input**:
+   - Type directly in the Current Selection box: "properties.status = closed"
+   - Click "Apply Filter" to update the chart with only closed pull requests
+
+3. **Clear Filter**: Click "Clear Filter" to reset back to "All Values" and apply the change
 
 ### Sample Data
 

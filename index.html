@@ -194,26 +194,35 @@
                 </select>
             </div>
             
-            <div class="control-group">
-                <label for="jsonProperty">JSON Property:</label>
-                <select id="jsonProperty" onchange="updatePropertyValues()">
-                    <option value="default">Default Metrics</option>
-                </select>
-            </div>
-            
-            <div class="control-group">
-                <label for="propertyValue">Property Value:</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <select id="propertyValue" onchange="updateSelectionDisplay(); updateChart();">
-                        <option value="all">All Values</option>
-                    </select>
-                    <button onclick="clearFilter()" style="background-color: #6c757d; font-size: 12px; padding: 6px 12px;">Clear Filter</button>
+            <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-bottom: 20px;">
+                <div class="control-group">
+                    <label for="selectionDisplay">Current Selection:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="selectionDisplay" placeholder="No selection" style="background-color: white; flex: 1;">
+                        <button onclick="applyFilter()" style="background-color: #28a745; font-size: 12px; padding: 6px 12px;">Apply Filter</button>
+                        <button onclick="clearFilter()" style="background-color: #6c757d; font-size: 12px; padding: 6px 12px;">Clear Filter</button>
+                    </div>
                 </div>
             </div>
             
-            <div class="control-group">
-                <label for="selectionDisplay">Current Selection:</label>
-                <input type="text" id="selectionDisplay" readonly placeholder="No selection" style="background-color: #f8f9fa;">
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px;">
+                <p style="margin: 0 0 15px 0; color: #856404; font-weight: bold; font-size: 14px;">
+                    ⚠️ This is only for demo purposes to understand your data, it should not be used going forward
+                </p>
+                
+                <div class="control-group">
+                    <label for="jsonProperty">JSON Property:</label>
+                    <select id="jsonProperty" onchange="updatePropertyValues()">
+                        <option value="default">Default Metrics</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="propertyValue">Property Value:</label>
+                    <select id="propertyValue" onchange="updateSelectionDisplay()">
+                        <option value="all">All Values</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -418,6 +427,50 @@
             
             // Update display and chart
             updateSelectionDisplay();
+            updateChart();
+        }
+
+        function applyFilter() {
+            // Parse the manually entered filter from the text box
+            const selectionText = document.getElementById('selectionDisplay').value.trim();
+            
+            if (selectionText === '' || selectionText === 'No selection') {
+                // No filter specified, use default metrics
+                document.getElementById('jsonProperty').value = 'default';
+                document.getElementById('propertyValue').value = 'all';
+            } else if (selectionText.includes('=')) {
+                // Parse format: "property = value"
+                const parts = selectionText.split('=');
+                if (parts.length === 2) {
+                    const property = parts[0].trim();
+                    const value = parts[1].trim();
+                    
+                    // Update dropdowns to match the manual input
+                    const jsonPropertyDropdown = document.getElementById('jsonProperty');
+                    const propertyValueDropdown = document.getElementById('propertyValue');
+                    
+                    // Find and select the property
+                    for (let option of jsonPropertyDropdown.options) {
+                        if (option.value === property) {
+                            jsonPropertyDropdown.value = property;
+                            break;
+                        }
+                    }
+                    
+                    // Update property values dropdown
+                    updatePropertyValues();
+                    
+                    // Find and select the value
+                    for (let option of propertyValueDropdown.options) {
+                        if (option.value === value) {
+                            propertyValueDropdown.value = value;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Apply the filter to the chart
             updateChart();
         }
 
