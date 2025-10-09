@@ -59,7 +59,9 @@ This application provides:
 
 #### 3. Customize Visualization
 - **Chart Type**: Switch between bar and line charts
-- **Time Range**: Filter data by last 7, 30, or 90 days
+- **Time Range**: Filter data by:
+  - **Days**: Last 7, 30, or 90 days
+  - **Months**: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec (current year)
 - **Metric**: Choose between:
   - **Hours**: Total hours spent on pull requests
   - **Count**: Number of pull requests
