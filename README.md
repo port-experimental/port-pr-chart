@@ -1,5 +1,7 @@
 # Port API Pull Request Chart
 
+![Port PR Chart Example](https://github.com/port-experimental/oss-images/blob/main/example-code.png)
+
 A web application that visualizes GitHub Pull Request analytics from Port.io API data. This tool fetches pull request entities from Port and displays them in interactive charts with various metrics and time ranges.
 
 ## What this code does?
