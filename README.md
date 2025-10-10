@@ -1,5 +1,7 @@
 # Port PR Chart - Backend/Frontend Separation
 
+![Port PR Chart Example](https://github.com/port-experimental/oss-images/blob/main/example-code.png)
+
 A modern, separated architecture for Port API data visualization with automatic token rotation and clean API design.
 
 ## 🏗️ Architecture
