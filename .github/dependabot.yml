@@ -1,0 +1,97 @@
+# Dependabot configuration for Port PR Chart
+# This file configures automated dependency updates and security scanning
+
+version: 2
+updates:
+  # Root package.json (if exists)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "huyquach"
+    assignees:
+      - "huyquach"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    ignore:
+      # Ignore major version updates for now (can be enabled later)
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Backend dependencies
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "huyquach"
+    assignees:
+      - "huyquach"
+    commit-message:
+      prefix: "chore(backend)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "automated"
+    ignore:
+      # Ignore major version updates for now (can be enabled later)
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Security updates (more frequent)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "huyquach"
+    assignees:
+      - "huyquach"
+    commit-message:
+      prefix: "security"
+      include: "scope"
+    labels:
+      - "security"
+      - "dependencies"
+      - "automated"
+    # Only security updates
+    allow:
+      - dependency-type: "direct"
+        update-type: "security"
+
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "huyquach"
+    assignees:
+      - "huyquach"
+    commit-message:
+      prefix: "security(backend)"
+      include: "scope"
+    labels:
+      - "security"
+      - "backend"
+      - "dependencies"
+      - "automated"
+    # Only security updates
+    allow:
+      - dependency-type: "direct"
+        update-type: "security"

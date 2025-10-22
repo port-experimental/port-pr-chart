@@ -104,6 +104,61 @@ export PORT_API_REGION="us"  # or "eu", "us-api", "eu-api"
 - **Fallback Support**: Uses backup tokens if generation fails
 - **Retry Logic**: Automatically retries failed requests with new tokens
 
+## 🔒 Security & Dependency Management
+
+### Automated Security Scanning
+This project uses **GitHub Dependabot** for automated dependency management and security scanning:
+
+#### Dependabot Configuration
+- **Weekly Updates**: Regular dependency updates every Monday at 9 AM UTC
+- **Daily Security Updates**: Critical security patches delivered daily
+- **Automated PRs**: Pull requests created automatically for updates
+- **Smart Labeling**: Updates tagged with appropriate labels (`security`, `dependencies`, `backend`)
+
+#### Security Workflows
+- **GitHub Actions**: Automated security scanning on every push/PR
+- **npm audit**: Regular vulnerability scanning
+- **Dependency Check**: Outdated package detection
+- **Unused Dependencies**: Cleanup of unused packages
+
+#### Update Schedule
+```yaml
+# Weekly version updates (Mondays)
+- interval: "weekly"
+  day: "monday"
+  time: "09:00"
+
+# Daily security updates
+- interval: "daily"
+  update-type: "security"
+```
+
+### Manual Security Checks
+```bash
+# Check for vulnerabilities
+cd backend
+npm audit
+
+# Check for outdated packages
+npm outdated
+
+# Check for unused dependencies
+npx depcheck
+```
+
+### Local Testing
+Test the security scanning locally before pushing to GitHub:
+
+```bash
+# Run comprehensive security tests (simulates GitHub Actions)
+./test-security.sh
+
+# Simulate Dependabot behavior
+./simulate-dependabot.sh
+```
+
+These scripts will show you exactly what Dependabot and GitHub Actions will do when you push your code.
+
 ## 🎨 Frontend Features
 
 ### Modern UI
