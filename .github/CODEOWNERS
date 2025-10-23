@@ -1,0 +1,5 @@
+# CODEOWNERS file for Port PR Chart
+# Simple configuration - Customer Success team owns everything
+
+# Global ownership for entire repository
+* @port-experimental/Customer-Success
