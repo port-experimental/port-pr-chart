@@ -25,10 +25,28 @@ class PortService {
 
     async makeAuthenticatedRequest(url, options = {}) {
         const tokenManager = require('./tokenManager');
-        const token = tokenManager.getCurrentToken();
+        
+        // Wait for token initialization if it's in progress
+        let token = tokenManager.getCurrentToken();
+        if (!token && tokenManager.getIsInitializing()) {
+            // Wait for initialization to complete (with timeout)
+            const maxWait = 10000; // 10 seconds
+            const startTime = Date.now();
+            while (!token && tokenManager.getIsInitializing() && (Date.now() - startTime) < maxWait) {
+                await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+                token = tokenManager.getCurrentToken();
+            }
+        }
+        
+        // If still no token, try to trigger initialization
+        const credentials = tokenManager.getClientCredentials();
+        if (!token && credentials?.clientId && credentials?.clientSecret) {
+            await tokenManager.initializeToken();
+            token = tokenManager.getCurrentToken();
+        }
         
         if (!token) {
-            throw new Error('No valid Port API token available. Please set PORT_API_TOKEN_PRIMARY environment variable or PORT_CLIENT_ID/PORT_CLIENT_SECRET.');
+            throw new Error('No valid Port API token available. Please ensure PORT_CLIENT_ID and PORT_CLIENT_SECRET are set correctly, or set PORT_API_TOKEN_PRIMARY.');
         }
 
         const requestOptions = {

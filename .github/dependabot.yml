@@ -1,0 +1,18 @@
+# Dependabot configuration for Port PR Chart
+# Monitors backend dependencies for updates
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "huyquach"
+    assignees:
+      - "huyquach"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "automated"
