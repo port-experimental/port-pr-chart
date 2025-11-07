@@ -18,6 +18,7 @@ class TokenManager {
         this.lastRotation = Date.now();
         this.rotationInterval = 2.5 * 60 * 60 * 1000; // 2.5 hours
         this.isRotating = false;
+        this.isInitializing = false;
         
         // Log token status on startup
         console.log('🔑 Token Manager initialized:');
@@ -27,14 +28,36 @@ class TokenManager {
         console.log(`   Client ID: ${this.clientCredentials.clientId ? 'Set' : 'Not Set'}`);
         console.log(`   Client Secret: ${this.clientCredentials.clientSecret ? 'Set' : 'Not Set'}`);
         
-        if (!this.tokens.primary && !this.clientCredentials.clientId) {
-            console.warn('⚠️  WARNING: No token or client credentials set!');
-            console.warn('   Set token: export PORT_API_TOKEN_PRIMARY="your_token_here"');
-            console.warn('   Or set credentials: export PORT_CLIENT_ID="your_id" PORT_CLIENT_SECRET="your_secret"');
+        if (!this.clientCredentials.clientId || !this.clientCredentials.clientSecret) {
+            console.warn('⚠️  WARNING: Client credentials not fully configured!');
+            console.warn('   Please ensure both PORT_CLIENT_ID and PORT_CLIENT_SECRET are set');
+        }
+        
+        // Generate initial token from client credentials (required)
+        if (!this.tokens.primary && this.clientCredentials.clientId && this.clientCredentials.clientSecret) {
+            console.log('🔄 Generating initial token from client credentials...');
+            this.initializeToken();
         }
         
         // Start automatic rotation
         this.startAutoRotation();
+    }
+
+    async initializeToken() {
+        if (this.isInitializing) return;
+        
+        this.isInitializing = true;
+        try {
+            const newToken = await this.generateNewToken();
+            this.currentToken = newToken;
+            this.lastRotation = Date.now();
+            console.log('✅ Initial token generated successfully from client credentials');
+        } catch (error) {
+            console.error('❌ Failed to generate initial token:', error.message);
+            console.error('   Please ensure PORT_CLIENT_ID and PORT_CLIENT_SECRET are correct');
+        } finally {
+            this.isInitializing = false;
+        }
     }
 
     startAutoRotation() {
@@ -139,7 +162,21 @@ class TokenManager {
     }
 
     getCurrentToken() {
+        // If we have client credentials but no token yet, try to generate one synchronously
+        // This is a fallback for cases where initialization hasn't completed
+        if (!this.currentToken && this.clientCredentials.clientId && this.clientCredentials.clientSecret && !this.isInitializing) {
+            // Trigger async initialization if not already in progress
+            this.initializeToken();
+        }
         return this.currentToken;
+    }
+
+    getClientCredentials() {
+        return this.clientCredentials;
+    }
+
+    getIsInitializing() {
+        return this.isInitializing;
     }
 
     getStatus() {

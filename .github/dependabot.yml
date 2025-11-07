@@ -95,3 +95,5 @@ updates:
     allow:
       - dependency-type: "direct"
         update-type: "security"
+
+

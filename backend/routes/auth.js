@@ -11,7 +11,7 @@ router.post('/validate', async (req, res) => {
         if (!token) {
             return res.status(400).json({ 
                 error: 'No token configured',
-                message: 'Please set PORT_API_TOKEN_PRIMARY environment variable'
+                message: 'Please set PORT_API_TOKEN_PRIMARY environment variable, or set PORT_CLIENT_ID and PORT_CLIENT_SECRET to generate a token automatically'
             });
         }
 

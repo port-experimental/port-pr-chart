@@ -159,6 +159,20 @@ Test the security scanning locally before pushing to GitHub:
 
 These scripts will show you exactly what Dependabot and GitHub Actions will do when you push your code.
 
+## 👥 Code Ownership
+
+### CODEOWNERS Configuration
+This project uses a simple CODEOWNERS file to automatically assign reviewers:
+
+- **port-experimental/Customer-Success Team**: Owns the entire repository
+- **Automatic Reviews**: All PRs automatically request review from Customer-Success team
+- **Simple Setup**: Single team ownership for all files and directories
+
+### Ownership Structure
+```
+* @port-experimental/Customer-Success   # Global ownership for entire repo
+```
+
 ## 🎨 Frontend Features
 
 ### Modern UI

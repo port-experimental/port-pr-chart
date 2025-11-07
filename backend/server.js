@@ -19,10 +19,19 @@ console.log(`   PORT_CLIENT_ID: ${process.env.PORT_CLIENT_ID ? 'Set' : 'Not Set'
 console.log(`   PORT_CLIENT_SECRET: ${process.env.PORT_CLIENT_SECRET ? 'Set' : 'Not Set'}`);
 console.log(`   PORT_API_REGION: ${process.env.PORT_API_REGION || 'us (default)'}`);
 
-if (!process.env.PORT_API_TOKEN_PRIMARY && !process.env.PORT_CLIENT_ID) {
-    console.error('❌ ERROR: No authentication method configured!');
-    console.error('   Option 1 - Set API token: export PORT_API_TOKEN_PRIMARY="your_token_here"');
-    console.error('   Option 2 - Set client credentials: export PORT_CLIENT_ID="your_id" PORT_CLIENT_SECRET="your_secret"');
+// Validate that both client credentials are required
+const hasClientId = !!process.env.PORT_CLIENT_ID;
+const hasClientSecret = !!process.env.PORT_CLIENT_SECRET;
+
+if (!hasClientId || !hasClientSecret) {
+    console.error('❌ ERROR: PORT_CLIENT_ID and PORT_CLIENT_SECRET are required!');
+    if (!hasClientId) {
+        console.error('   Missing: PORT_CLIENT_ID');
+    }
+    if (!hasClientSecret) {
+        console.error('   Missing: PORT_CLIENT_SECRET');
+    }
+    console.error('   Please set both: export PORT_CLIENT_ID="your_id" PORT_CLIENT_SECRET="your_secret"');
     process.exit(1);
 }
 

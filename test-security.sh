@@ -95,3 +95,5 @@ echo "  - Outdated packages: $(cd backend && npm outdated >/dev/null 2>&1 && ech
 echo "  - Unused dependencies: $(cd backend && npx depcheck >/dev/null 2>&1 && echo "NONE" || echo "FOUND")"
 echo ""
 print_status "🚀 This simulates what GitHub Actions will run automatically!"
+
+
