@@ -40,17 +40,14 @@ npm audit --json | jq -r '.vulnerabilities | to_entries[] | "\(.key): \(.value.s
 
 echo ""
 print_status "📋 What Dependabot would do:"
-echo "1. Create PR for dotenv: 16.6.1 → 17.2.3 (major update)"
-echo "2. Create PR for express: 4.21.2 → 5.1.0 (major update)"
-echo "3. Monitor for security updates daily"
-echo "4. Create PRs for any security patches found"
+echo "1. Monitor backend dependencies weekly"
+echo "2. Create PRs for available updates"
+echo "3. Limit to 5 open PRs at a time"
 
 echo ""
 print_status "🎯 Dependabot Configuration Status:"
-echo "✅ Weekly updates: Enabled (Mondays at 9 AM UTC)"
-echo "✅ Daily security updates: Enabled"
-echo "✅ Major version updates: Disabled (as configured)"
-echo "✅ PR limit: 5 per directory"
+echo "✅ Weekly updates: Enabled (backend folder only)"
+echo "✅ PR limit: 5 open PRs"
 echo "✅ Auto-assignment: Enabled"
 
 echo ""
